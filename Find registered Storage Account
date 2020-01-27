@@ -1,0 +1,28 @@
+Param(
+        [Parameter(Mandatory=$True)][System.String] $ResourceGroupName,
+        [Parameter(Mandatory=$True)][System.String] $StorageAccountName,
+        [Parameter(Mandatory=$True)][System.String] $SubscriptionId
+    )
+
+Connect-AzAccount
+Select-AzSubscription -Subscription $SubscriptionId
+$vaults = Get-AzRecoveryServicesVault
+$found = $false 
+foreach($vault in $vaults)
+{
+  Write-Verbose "Checking vault: $($vault.Id)" -Verbose
+  
+  $containers = Get-AzRecoveryServicesBackupContainer -ContainerType AzureStorage -FriendlyName $StorageAccountName -ResourceGroupName $ResourceGroupName -VaultId $vault.Id -Status Registered
+  
+  if($containers -ne $null)
+  {
+    $found = $True
+    Write-Information "Found Storage account $StorageAccountName registred in vault: $($vault.Id)" -InformationAction Continue
+    break;
+  }
+}
+
+if(!$found)
+{
+     Write-Information "Storage account: $StorageAccountName is not registred in any vault of this subscription" -InformationAction Continue
+}
